@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Trash Detector Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.13.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3"></script>
+</head>
+<body class="bg-gray-900 text-gray-100">
+
+<div class="grid grid-cols-1 md:grid-cols-2 min-h-screen">
+
+  <!-- 1. Video + Canvas Container -->
+  <div id="video-container" class="relative aspect-video overflow-hidden">
+    <video id="video" class="w-full h-full object-contain" autoplay muted playsinline></video>
+    <canvas id="canvas" class="absolute inset-0 w-full h-full pointer-events-none"></canvas>
+    <!-- hidden ESP32 frame -->
+    <img id="esp32-frame" crossorigin="anonymous" class="hidden" />
+  </div>
+
+  <!-- 2. Dashboard Pane -->
+  <div class="flex flex-col overflow-y-auto p-6 bg-gray-800 border-l border-gray-700">
+    <header class="mb-6">
+      <h1 class="text-3xl font-bold mb-1">Trash Detection Dashboard 📊</h1>
+      <p class="text-sm text-gray-400">Real‑time object detection (webcam or ESP32‑CAM)</p>
+    </header>
+
+    <!-- Stats -->
+    <section class="grid grid-cols-2 gap-4 mb-4">
+      <div class="bg-gray-700 p-4 rounded-lg">
+        <p class="text-gray-400 text-sm">Total Detections</p>
+        <p id="total" class="text-2xl font-mono text-green-400">0</p>
+      </div>
+      <div class="bg-gray-700 p-4 rounded-lg">
+        <p class="text-gray-400 text-sm">Last Detection</p>
+        <p id="last" class="text-2xl font-mono text-yellow-400">—</p>
+      </div>
+    </section>
+
+    <!-- Threshold -->
+    <section class="mb-4">
+      <label class="block text-sm text-gray-300 mb-1">
+        Confidence Threshold: <span id="threshold-val" class="font-mono">50%</span>
+      </label>
+      <input type="range" id="threshold" min="10" max="90" value="50"
+             class="w-full h-2 bg-gray-600 rounded-lg cursor-pointer" />
+    </section>
+
+    <!-- Controls -->
+    <section class="flex flex-wrap gap-2 mb-4">
+      <button id="btn-pause" class="bg-blue-500 px-4 py-2 rounded text-white">Pause</button>
+      <button id="btn-download" class="bg-green-500 px-4 py-2 rounded text-white">Download CSV</button>
+      <button id="btn-reset" class="bg-red-500 px-4 py-2 rounded text-white">Reset</button>
+      <button id="btn-switch-camera" class="bg-purple-500 px-4 py-2 rounded text-white">Switch Camera</button>
+    </section>
+
+    <!-- ESP32 Input -->
+    <section class="mb-6">
+      <label class="block text-sm text-gray-300 mb-1">ESP32-CAM Stream URL:</label>
+      <input type="text" id="esp32-url" placeholder="http://192.168.x.x:81/stream"
+             class="w-full px-3 py-1 rounded bg-gray-700 text-white mb-2" />
+      <button id="btn-use-esp32" class="bg-indigo-500 px-4 py-2 rounded text-white w-full">Use ESP32-CAM</button>
+    </section>
+
+    <!-- Detection Stats -->
+    <section class="mb-6">
+      <h2 class="text-lg font-semibold text-gray-300 mb-2">Detection Stats</h2>
+      <ul id="types" class="grid grid-cols-2 md:grid-cols-3 gap-2"></ul>
+    </section>
+
+    <!-- Activity Log -->
+    <section class="flex-1">
+      <h2 class="text-lg font-semibold text-gray-300 mb-2">Activity Log</h2>
+      <ul id="log" class="max-h-60 overflow-y-auto space-y-1 pr-2"></ul>
+    </section>
+  </div>
+</div>
+
+<!-- Loader Overlay -->
+<div id="model-loading" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
+  <div class="text-center space-y-4 text-white">
+    <div class="animate-spin h-12 w-12 border-4 border-blue-500 border-t-transparent rounded-full mx-auto"></div>
+    <p id="model-progress" class="text-lg">Loading model…</p>
+    <div id="camera-activation" class="hidden mt-4">
+      <p class="mb-2 text-gray-300">Camera access required</p>
+      <button id="btn-enable-camera" class="px-4 py-2 bg-blue-500 rounded">Enable Camera</button>
+    </div>
+  </div>
+</div>
+
+<!-- Error Overlay -->
+<div id="model-error" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
+  <div class="bg-gray-800 p-6 rounded-lg text-center text-white">
+    <div class="text-red-500 text-4xl mb-2">⚠️</div>
+    <h3 class="text-xl mb-2">Initialization Error</h3>
+    <p id="error-message" class="text-gray-300 mb-4"></p>
+    <button onclick="window.location.reload()" class="px-4 py-2 bg-blue-500 rounded">Try Again</button>
+  </div>
+</div>
+
+<script src="main.js"></script>
+</body>
+</html>
